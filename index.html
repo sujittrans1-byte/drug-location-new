@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ค้นหาตำแหน่งยา (ผังใหม่)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f5f4;--panel:#fff;--ink:#14231d;--muted:#5d6f67;--line:#dfe6e2;
+  --brand:#0f766e;--brand-ink:#fff;--brand-soft:#e3f3f0;
+  --hit:#f59e0b;--hit-soft:#fff4db;--empty:#f0f2f1;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:'IBM Plex Sans Thai',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45}
+button{font:inherit;cursor:pointer}
+header{background:var(--brand);color:var(--brand-ink);padding:18px 20px 64px}
+.hwrap{max-width:1280px;margin:0 auto;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-size:22px;font-weight:700;letter-spacing:.2px}
+.sub{opacity:.85;font-size:13px;margin-top:2px}
+.hbtn{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:7px 12px;font-size:13px}
+.hbtn:hover{background:rgba(255,255,255,.24)}
+.searchbar{max-width:1280px;margin:-44px auto 0;padding:0 20px;position:relative;z-index:2}
+.sbox{display:flex;align-items:center;background:var(--panel);border-radius:16px;box-shadow:0 8px 30px rgba(15,60,50,.14);padding:6px 6px 6px 18px;gap:10px}
+.sbox svg{flex:none;color:var(--muted)}
+#q{flex:1;border:0;outline:0;font:inherit;font-size:19px;padding:12px 0;background:transparent;color:var(--ink);min-width:0}
+#clear{border:0;background:var(--empty);border-radius:10px;padding:8px 12px;color:var(--muted);display:none}
+.hint{font-size:12.5px;color:var(--muted);margin:8px 4px 0}
+.hint kbd{font-family:var(--mono);background:#fff;border:1px solid var(--line);border-radius:5px;padding:0 5px;font-size:11.5px}
+main{max-width:1280px;margin:16px auto 40px;padding:0 20px;display:grid;grid-template-columns:minmax(300px,400px) 1fr;gap:18px;align-items:start}
+.card{background:var(--panel);border-radius:14px;border:1px solid var(--line)}
+#results{max-height:calc(100vh - 190px);overflow:auto;position:sticky;top:12px}
+.rhead{padding:12px 16px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted);display:flex;justify-content:space-between;position:sticky;top:0;background:var(--panel);z-index:1;border-radius:14px 14px 0 0}
+.item{padding:12px 16px;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.iname{font-weight:600;font-size:15.5px;word-break:break-word}
+.iname mark{background:var(--hit-soft);color:inherit;border-radius:3px;padding:0 1px}
+.locs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.loc{font-family:var(--mono);font-weight:700;font-size:14px;border:1.5px solid var(--brand);color:var(--brand);background:#fff;border-radius:9px;padding:4px 10px}
+.loc:hover{background:var(--brand-soft)}
+.loc.on{background:var(--brand);color:#fff}
+.empty-state{padding:28px 18px;text-align:center;color:var(--muted)}
+.empty-state b{color:var(--ink)}
+/* map */
+.mapcard{padding:0;overflow:hidden}
+.tabs{display:flex;gap:6px;padding:12px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:thin}
+.tab{flex:none;border:1px solid var(--line);background:#fff;border-radius:9px;padding:6px 11px;font-family:var(--mono);font-weight:700;font-size:13px;color:var(--muted)}
+.tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tab.has{border-color:var(--hit);color:#9a5b00;background:var(--hit-soft)}
+.tab.on.has{background:var(--ink);color:#fff}
+.focus{padding:16px 18px;display:flex;gap:16px;align-items:center;border-bottom:1px solid var(--line);background:linear-gradient(90deg,var(--hit-soft),#fff 70%)}
+.focus .big{font-family:var(--mono);font-weight:700;font-size:30px;line-height:1;letter-spacing:-.5px}
+.focus .parts{display:flex;gap:14px;font-size:12.5px;color:var(--muted)}
+.focus .parts b{display:block;font-size:17px;color:var(--ink);font-family:var(--mono)}
+.focus .fname{font-weight:600;font-size:16px}
+.cab{padding:16px 18px 20px}
+.cabtitle{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.cabtitle h2{margin:0;font-size:17px}
+.cabtitle span{font-size:12.5px;color:var(--muted)}
+.frame{position:relative;border:3px solid #c9d3ce;border-radius:10px;background:#e9eeeb;padding:6px;overflow-x:auto}
+.shelf{display:flex;width:max-content;min-width:100%;align-items:stretch;gap:6px;padding:6px 0;border-bottom:4px solid #c9d3ce}
+.shelf:last-child{border-bottom:0}
+.slab{flex:none;width:38px;position:sticky;left:-6px;z-index:1;background:#e9eeeb;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10.5px;color:var(--muted);line-height:1.1}
+.slab b{font-family:var(--mono);font-size:16px;color:var(--ink)}
+.slots{display:grid;gap:5px;flex:none}
+.slot{background:#fff;border:1px solid var(--line);border-radius:7px;padding:5px 6px 6px;min-height:64px;text-align:left;display:flex;flex-direction:column;gap:2px;color:var(--ink)}
+.slot .no{font-family:var(--mono);font-size:10.5px;color:var(--muted);font-weight:700}
+.slot .nm{font-size:11.5px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-word}
+.slot.blank{background:var(--empty);border-style:dashed}
+.slot.blank .nm{color:#a3b0aa}
+.slot.match{background:var(--hit-soft);border-color:var(--hit)}
+.slot.sel{background:var(--hit);border-color:#b45309;color:#1f1300;box-shadow:0 0 0 3px rgba(245,158,11,.35);animation:pulse 1.4s ease-out 2}
+.slot.sel .no{color:#1f1300}
+.slot:hover{border-color:var(--brand)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(245,158,11,.7)}100%{box-shadow:0 0 0 14px rgba(245,158,11,0)}}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px;border:1px solid var(--line)}
+/* dialog */
+.dlg{position:fixed;inset:0;background:rgba(10,25,20,.45);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+.dlg.on{display:flex}
+.dlg .box{background:#fff;border-radius:14px;max-width:460px;width:100%;padding:20px}
+.dlg h3{margin:0 0 8px}
+.dlg p{margin:6px 0;color:var(--muted);font-size:14px}
+.row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:#fff}
+#msg{font-size:13.5px;margin-top:8px}
+@media (max-width:860px){
+  html,body{overflow-anchor:none}
+  body{padding-top:66px}
+  header{padding:12px 16px 14px}
+  h1{font-size:19px}
+  .searchbar{position:fixed;top:0;left:0;right:0;margin:0;padding:8px 10px;background:var(--brand);z-index:10;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+  .sbox{box-shadow:none;border-radius:12px;padding:3px 4px 3px 12px}
+  main{margin-top:12px;padding:0 12px;min-height:100vh}
+  .hint{display:none}
+  #focus{scroll-margin-top:76px}
+  .sbox{padding-left:14px}
+  #q{font-size:17px;padding:10px 0}
+  main{grid-template-columns:1fr}
+  #results{position:static;max-height:none}
+  header{padding-bottom:58px}
+  .focus .big{font-size:24px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="hwrap">
+    <div>
+      <h1>ค้นหาตำแหน่งยา <span style="font-weight:500;opacity:.8;font-size:.8em">ผังใหม่</span></h1>
+      <div class="sub" id="stats"></div>
+    </div>
+    <button class="hbtn" id="importBtn">อัปเดตข้อมูลจาก Excel</button>
+  </div>
+</header>
+
+<div class="searchbar">
+  <div class="sbox">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="text" enterkeyhint="search" autocomplete="off" placeholder="พิมพ์ชื่อยา หรือรหัสตำแหน่ง เช่น paracetamol, B1-3" autofocus>
+    <button id="clear">ล้าง</button>
+  </div>
+  <div class="hint">ค้นได้ทั้งชื่อสามัญ ชื่อการค้า ความแรง (เช่น <kbd>amlo 10</kbd>) หรือรหัส (<kbd>F1-5</kbd>) · กด <kbd>/</kbd> เพื่อเริ่มพิมพ์ · <kbd>Enter</kbd> เลือกผลแรก</div>
+</div>
+
+<main>
+  <section class="card" id="results"></section>
+  <section class="card mapcard">
+    <div class="tabs" id="tabs"></div>
+    <div id="focus"></div>
+    <div class="cab" id="cab"></div>
+  </section>
+</main>
+
+<div class="dlg" id="dlg">
+  <div class="box">
+    <h3>อัปเดตข้อมูลจากไฟล์ Excel</h3>
+    <p>เลือกไฟล์ .xlsx รูปแบบเดียวกับไฟล์ผังตู้ยา ตู้ A–K ใช้เฉพาะชีตที่มีคำว่า <b>FINAL</b> (เช่น “A1 FINAL”) ส่วนตู้ L และ M ใช้ชีตชื่อตู้ตรง ๆ (เช่น “L1”) ชีตที่ไม่มีรหัสตำแหน่งจะถูกข้าม</p>
+    <p>ข้อมูลใหม่จะถูกจำไว้ในเบราว์เซอร์นี้เท่านั้น</p>
+    <input type="file" id="file" accept=".xlsx,.xls" style="margin-top:10px">
+    <div id="msg"></div>
+    <div class="row">
+      <button class="btn" id="resetBtn">กลับไปใช้ข้อมูลตั้งต้น</button>
+      <button class="btn pri" id="closeBtn">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const DEFAULT_DATA = [{"id":"A1","slots":[[1,1,"SILDENAFI L (VIAGRA)"],[1,2,"ESTRADIOL VALERATE 1 MG"],[1,3,"PREMARIN 0.625 MG"],[1,4,"LETROZOLE 2.5 MG"],[1,5,"TENOFOVIR ALAFENAMIDE (TAF) 25 MG"],[1,6,"PROVERA 5 MG"],[1,7,"ACYCLOVIR 200 MG"],[1,8,"NORTRIPTYLINE 25 MG"],[1,9,"ORAL PILL 30+150 MCG"],[1,10,"MADOPAR HBS 125 MG"],[2,1,"SIMETHICONE (AIR-X) 80 MG"],[2,2,"SIMETHICONE (AIR-X) 80 MG"],[2,3,"SIMETHICONE (AIR-X) 80 MG"],[2,4,"MTX"],[2,5,"(ATIVAN) loRAZEPAM 0.5 MG"],[2,6,"(ATIVAN) loRAZEPAM 0.5 MG"],[3,1,"GABAPENTIN 300 MG"],[3,2,"GABAPENTIN 300 MG"],[3,3,"GABAPENTIN 300 MG"],[3,4,"GLIPZINE 5 MG"],[3,5,"GLIPZINE 5 MG"],[3,6,"GLIPZINE 5 MG"],[4,1,"GABAPENTIN 300 MG"],[4,2,"GABAPENTIN 300 MG"],[4,3,"GABAPENTIN 300 MG"],[4,4,"GLIPZINE 5 MG"],[4,5,"GLIPZINE 5 MG"],[4,6,"GLIPZINE 5 MG"],[5,1,"GABAPENTIN 300 MG"],[5,2,"GABAPENTIN 300 MG"],[5,3,"GABAPENTIN 300 MG"],[5,4,"GLIPZINE 5 MG"],[5,5,"GLIPZINE 5 MG"],[5,6,"GLIPZINE 5 MG"],[6,1,"MICRONISED PROGESTERONE 200 MG"],[6,2,"PRIMOLUT -N (NORETHISTERONE) 5 MG"],[6,3,"FLUCONAZOLE 200 MG"],[6,4,"METHYLSALICYLATE CREAM"],[6,5,"METHYLSALICYLATE CREAM"],[6,6,"TAMOXIFEN"],[6,7,"ONDANSETRON"],[6,8,"QUETIAPINE"],[6,9,"ENTACAPONE (L) 200 MG"],[6,10,"ENTACAPONE (L) 200 MG"],[7,1,"PYRAZINAMIDE 500 MG"],[7,2,"ETHAMBUTOL 400 MG"],[7,3,"ETHAMBUTOL 500 MG"],[7,4,"RIFAMPICIN 300 MG"],[7,5,"RIFAMPICIN 450 MG"],[7,6,"ALBENDAZOLE 200 MG"],[7,7,"NYSTATIN ORAL SUSP 12 ML"],[7,8,"LAMIVUDINE SYR (DAY CARE) 10 MG/ML"],[7,9,"AZT SYRUP (DAY CARE) 10 MG/ML"],[7,10,"NVP SYRUP"],[8,1,"ISONIAZID (INH) 100 MG"],[8,2,"kETOCONAZOLE 200 MG"],[8,3,"CLOMIFENE 50 MG"],[8,4,""],[8,5,""],[8,6,"FENOFIBRATE (DAY CARE) 100 MG"],[8,7,"FENOFIBRATE (DAY CARE) 100 MG"],[8,8,""],[8,9,""],[8,10,"TENOFOVIR (HEPATITIS) 300 MG"]]},{"id":"B1","slots":[[1,1,"TOPAMAX (L) 50 MG"],[1,2,"WARFARIN 1 MG"],[1,3,"WARFARIN 1 MG"],[1,4,"PYRIDOSTIGMINE (MESTINON) 60 MG"],[1,5,"AMITRIPTYLINE HCL 10 MG"],[1,6,"GALANTAMINE (L) 8 MG"],[1,7,"DONEPEZIL (ARICEPT) 10 MG"],[1,8,"AZATHIOPRIN 50MG"],[1,9,"AMOXICILLIN 250 MG"],[1,10,"CEPHALEXIN"],[2,1,"BETAHISTINE 6 MG"],[2,2,"BETAHISTINE 6 MG"],[2,3,"RIS -PERIDONE"],[2,4,"CALITRIOL (VIT B3) 0.25 MCG"],[2,5,"CALITRIOL (VIT B3) 0.25 MCG"],[2,6,"CALITRIOL (VIT B3) 0.25 MCG"],[3,1,"IBUPROFEN 400 MG"],[3,2,"IBUPROFEN 400 MG"],[3,3,"VITAMIN B1-6-12"],[3,4,"RIVOTRIL 0.5 MG"],[3,5,"RIVOTRIL 0.5 MG"],[3,6,"RIVOTRIL 0.5 MG"],[4,1,"LOSARTAN 14"],[4,2,"LOSARTAN 14"],[4,3,"LOSARTAN 14"],[4,4,"SIMVASTATIN 10 MG 16"],[4,5,"SIMVASTATIN 10 MG 16"],[4,6,"SIMVASTATIN 10 MG 16"],[5,1,"LOSARTAN 14"],[5,2,"LOSARTAN 14"],[5,3,"LOSARTAN 14"],[5,4,"SIMVASTATIN 10 MG 16"],[5,5,"SIMVASTATIN 10 MG 16"],[5,6,"SIMVASTATIN 10 MG 16"],[6,1,"AUGMENTIN 875 MG+125 MG"],[6,2,"AUGMENTIN 875 MG+125 MG"],[6,3,"AUGMENTIN 875 MG+125 MG"],[6,4,"AUGMENTIN 875 MG+125 MG"],[6,5,"AUGMENTIN 875 MG+125 MG"],[6,6,"SOD.VALPROATE (DEPAKIN) 500 MG"],[6,7,"SOD.VALPROATE (DEPAKIN) 500 MG"],[6,8,"SOD.VALPROATE (DEPAKIN) 500 MG"],[6,9,"SOD.VALPROATE (DEPAKIN) 500 MG"],[6,10,"SOD.VALPROATE (DEPAKIN) 500 MG"],[7,1,"ALENDRONATE 70 MG"],[7,2,"RISEDRONATE (ACTONEL)/MONTH 150 MG"],[7,3,"MIRTAZAPINE (MERASAL) 30 MG"],[7,4,"ALDOMET 250 MG"],[7,5,"ALDOMET 250 MG"],[7,6,"OXCARBAZEPINE (TRILEPTAL) 600 MG"],[7,7,"DICLOFENAC 75 MG"],[7,8,"CINNARIZINE"],[7,9,"FLUNARIZINE 5 MG"],[7,10,"ARIPIPRAZOLE (L) 10 MG"],[8,1,""],[8,2,""],[8,3,""],[8,4,""],[8,5,""],[8,6,"CHLOROQUIN 250 MG"],[8,7,""],[8,8,""],[8,9,""],[8,10,""]]},{"id":"C1","slots":[[1,1,"XITRIN(POCITRIN) URO 231.5+195 MG"],[1,2,"LOPERAMIDE 2 MG"],[1,3,"GLUCOSAMINE POWDER 1.5G"],[1,4,"GLUCOSAMINE POWDER 1.5G"],[1,5,"GLUCOSAMINE POWDER 1.5G"],[1,6,"HYDROXYCHLOROQUINE 200 MG"],[1,7,"HYDROXYCHLOROQUINE 200 MG"],[1,8,"ITRACONAZOLE 100 MG"],[1,9,"ITRACONAZOLE 100 MG"],[1,10,"ITRACONAZOLE 100 MG"],[2,1,"TRAZODONE"],[2,2,"TRAZODONE"],[2,3,"DICLOFENAC 25 MG"],[2,4,"LEVOCETERIZINE"],[2,5,"LEVOCETERIZINE"],[2,6,"LEVOCETERIZINE"],[3,1,"PRAZOSIN (MINIPRESS) 1 MG"],[3,2,"PRAZOSIN (MINIPRESS) 1 MG"],[3,3,"CELECOXIB (L) 200 MG"],[3,4,"SENOKOT 7.5 MG"],[3,5,"SENOKOT 7.5 MG"],[3,6,"LORATADINE"],[4,1,"DIMENHYDRINAYE 50 MG"],[4,2,"CETERIZINE"],[4,3,"AMITRYPTYLINE HCL 25 MG"],[4,4,"CALCIUM CARBONATE 600 MG"],[4,5,"CALCIUM CARBONATE 600 MG"],[4,6,"CALCIUM CARBONATE 600 MG"],[5,1,"MADOPAR 250 MG"],[5,2,"MADOPAR 250 MG"],[5,3,"MADOPAR 250 MG"],[5,4,"CALCIUM CARBONATE 600 MG"],[5,5,"CALCIUM CARBONATE 600 MG"],[5,6,"CALCIUM CARBONATE 600 MG"],[6,1,"CEFIXIME 100 MG"],[6,2,"CEFIXIME 100 MG"],[6,3,"KETOTIFEN"],[6,4,"DICLOXACILLIN 250 MG"],[6,5,"DICLOXACILLIN 250 MG"],[6,6,"CIPROFLOXACIN 250 MG"],[6,7,"CIPROFLOXACIN 250 MG"],[6,8,"SUCRAFATE"],[6,9,"SUCRAFATE"],[6,10,"SUCRAFATE"],[7,1,"AZITHROMYCIN 250 MG"],[7,2,"AZITHROMYCIN 250 MG"],[7,3,"LEVOFLOXACIN 500 MG"],[7,4,"ROXIthromycin (RULID) 150 mg"],[7,5,"ROXIthromycin (RULID) 150 mg"],[7,6,"METOCLOPRMIDE (PLASIL) 10 MG"],[7,7,"OFLOXACIN 200 MG"],[7,8,"OSELTAMIVIR (TAMIFLU) 30 MG"],[7,9,"OSELTAMIVIR (TAMIFLU) 45 MG"],[7,10,"OSELTAMIVIR (TAMIFLU) 75 MG"],[8,1,"HYDROXYUREA"],[8,2,"VAlaCYCLOVIR (VALTREX) 500 MG"],[8,3,"PYRIMETHAMINE 25 MG"],[8,4,"NORFLOXACIN 200 MG"],[8,5,"DEXAMETHASONE 4 MG"],[8,6,"CLARITROMYCIN 500 MG"],[8,7,"DOXYCYCLINE 100 MG"],[8,8,""],[8,9,""],[8,10,""]]},{"id":"D1","slots":[[1,1,"PLETAAL 50 MG"],[1,2,"TRIFERDINE"],[1,3,"EZETIMIBE(L) 10 MG"],[1,4,"EZETIMIBE(L) 10 MG"],[1,5,"ROSUVASTATIN(L) 10 MG"],[1,6,"PENTOXYLLINE(L) 400 MG"],[1,7,"PENTOXYLLINE(L) 400 MG"],[1,8,"LEVOTHYROXINE 50 mcg"],[1,9,"METOPROLOL"],[1,10,"METOPROLOL"],[2,1,"COLCHICINE 0.6 MG"],[2,2,"COLCHICINE 0.6 MG"],[2,3,"SPIRONOLACTONE 25 MG"],[2,4,"(LOPID) GEMFIBROZIL 600 MG"],[2,5,"(LOPID) GEMFIBROZIL 600 MG"],[2,6,"(LOPID) GEMFIBROZIL 600 MG"],[3,1,"แอมโลดิพีน ๕ มิลลิกรัม"],[3,2,"แอมโลดิพีน ๕ มิลลิกรัม"],[3,3,"แอมโลดิพีน ๕ มิลลิกรัม"],[3,4,"ENALAPRIL(อีนาลาพริล) 20 MG"],[3,5,"ENALAPRIL(อีนาลาพริล) 20 MG"],[3,6,"ENALAPRIL(อีนาลาพริล) 20 MG"],[4,1,"OMEPRAZOLE(LOSEC) CAP 20 MG"],[4,2,"OMEPRAZOLE(LOSEC) CAP 20 MG"],[4,3,"OMEPRAZOLE(LOSEC) CAP 20 MG"],[4,4,"METFORMIN(เมทฟอร์มิน) 500 MG"],[4,5,"METFORMIN(เมทฟอร์มิน) 500 MG"],[4,6,"METFORMIN(เมทฟอร์มิน) 500 MG"],[5,1,"OMEPRAZOLE(LOSEC) CAP 20 MG"],[5,2,"OMEPRAZOLE(LOSEC) CAP 20 MG"],[5,3,"OMEPRAZOLE(LOSEC) CAP 20 MG"],[5,4,"METFORMIN(เมทฟอร์มิน) 500 MG"],[5,5,"METFORMIN(เมทฟอร์มิน) 500 MG"],[5,6,"METFORMIN(เมทฟอร์มิน) 500 MG"],[6,1,"OMEPRAZOLE(LOSEC) CAP 20 MG"],[6,2,"OMEPRAZOLE(LOSEC) CAP 20 MG"],[6,3,"OMEPRAZOLE(LOSEC) CAP 20 MG"],[6,4,"OMEPRAZOLE(LOSEC) CAP 20 MG"],[6,5,"OMEPRAZOLE(LOSEC) CAP 20 MG"],[6,6,"ORS ซอง"],[6,7,"ORS ซอง"],[6,8,"METFORMIN(เมทฟอร์มิน) 500 MG"],[6,9,"METFORMIN(เมทฟอร์มิน) 500 MG"],[6,10,"METFORMIN(เมทฟอร์มิน) 500 MG"],[7,1,"ISMO (Isosorbide mononitrate) 20 MG"],[7,2,"ISMO (Isosorbide mononitrate) 20 MG"],[7,3,"GPO-L-ONE 500 MG"],[7,4,"PERINDOPRIL(COVERSYL) 5 MG"],[7,5,"DEFERASIROX(L) 250 MG"],[7,6,"พญายอกลีเซอรีน"],[7,7,"PROSTAGUTT 160+120 MG"],[7,8,"น้ำมันไพล"],[7,9,"ZIGALESS MOUTH SPRAY"],[7,10,"ยาธาตุผสมอบเชย"],[8,1,"VERAPAMIL 40 MG"],[8,2,"MEIACT 100 MG"],[8,3,"FLECAINIDE(Tambocor) 100 MG"],[8,4,""],[8,5,""],[8,6,"ครีมว่านหางจระเข้"],[8,7,"พญายอครีม 4.343 G"],[8,8,""],[8,9,""],[8,10,""]]},{"id":"E1","slots":[[1,1,"probenecid"],[1,2,"PROPYLTHIOURACINL(PTU) propyl 50 MG"],[1,3,"TRANSAMIN 250 MG"],[1,4,"ETORICOXIB (L) 90 MG"],[1,5,"METRONIDAZOLE 200 MG"],[1,6,"AZILSARTAN"],[1,7,"BENZBROMARONE 100 MG"],[1,8,"PIROXICAM 10 MG"],[1,9,"MEFENAMIC ACID 500 MG"],[1,10,"DAPSONE 100 MG"],[2,1,"DOXAZOSIN 4 MG"],[2,2,"DOXAZOSIN 4 MG"],[2,3,"DOXAZOSIN 4 MG"],[2,4,"DOMPERIDONE 10 MG"],[2,5,"ELTROXIN"],[2,6,"ELTROXIN"],[3,1,"DOXAZOSIN 4 MG"],[3,2,"เมไธมาโซลmethiMAZOLE(MMI) 5 MG"],[3,3,"METHYCOBAL 500mcg TAB"],[3,4,"MONTELUKAST SODIUM 10 MG"],[3,5,"MONTELUKAST SODIUM 10 MG"],[3,6,"BUSCOPAN"],[4,1,"PREGABALIN"],[4,2,"PREGABALIN"],[4,3,"ENALAPRIL 5 MG"],[4,4,"TRAMADOL"],[4,5,"TRAMADOL"],[4,6,"TRAMADOL"],[5,1,"ENALAPRIL(อีนาลาพริล) 5 MG"],[5,2,"ENALAPRIL(อีนาลาพริล) 5 MG"],[5,3,"ENALAPRIL(อีนาลาพริล) 5 MG"],[5,4,"TRAMADOL"],[5,5,"TRAMADOL"],[5,6,"TRAMADOL"],[6,1,"CLOTRIMAZOLE CREAM 30 G"],[6,2,"CLOTRIMAZOLE CREAM 5 G"],[6,3,"TA 0.02% CREAM 5 G"],[6,4,"TA 0.02% CREAM 30 G"],[6,5,"TA 0.1% CREAM 5 G"],[6,6,"MILK OF MAGNESIA(MOM) 30 ML"],[6,7,"POVIDINE SOL 15 ML (IPD)"],[6,8,"KCL ELIXIR 60 ML"],[6,9,"VASELINE 5 GM"],[6,10,"KCL ELIXIR 30 ML"],[7,1,"SILVEROL CREAM 5 G"],[7,2,"SILVEROL CREAM 30 G"],[7,3,"BETAMETHASONE CREAM 5 GM"],[7,4,"BETAMETHASONE CREAM 30 GM"],[7,5,"CLOBETASOL CREAM 5 G"],[7,6,"VASELINE 30 GM"],[7,7,"TA IN ORAL BASE 1 MG/G"],[7,8,"TA 0.02% LOTION 60 ML"],[7,9,"SIMETHICONE(AIR-X) DROP 15 ML"],[7,10,"FERROUS DROP 15 ML"],[8,1,"SILVEROL CREAM 450 G"],[8,2,"TETRACYCLINE"],[8,3,"DAIVOBET OINT 15 G"],[8,4,"LIDOCAINE 2% JELLY"],[8,5,"MUPIROCIN OINT 5 G"],[8,6,"ยาชงหญ้าดอกขาว pack 2 g"],[8,7,"CALAMINE LOTION 60 ML"],[8,8,"LUGOL SOLUTION 60 ML"],[8,9,"XYLOCAINE VISCOUS 2% 15 ML"],[8,10,"CHLORAL hYDRATE 30 ML"]]},{"id":"H1","slots":[[1,1,"Proluton D 250 mg"],[1,2,"IMPLANON NXT 68 MG"],[1,3,"TIGECYCLINE INJ 50 MG"],[1,4,""],[1,5,"ACETAZOLAMIDE (DIAMOX) 250 MG"],[1,6,"AMIODARONE 200 MG"],[1,7,"1% ISOSULFAN BLUE 1 G"],[1,8,"NALOXONE(NARCAN)INJ"],[1,9,"CHLORpromazine(CPZ)INJ"],[1,10,"LABETALOL INJ"],[2,1,"CARBETOCIN INJ"],[2,2,"NaLBUPHINE HCL 10MG/ML"],[2,3,"TRAMADOL INJ"],[2,4,"VITAMIN B COM.INJ"],[2,5,"DIMENHYDRINATE INJ"],[2,6,"THIAMINE(B1) INJ"],[3,1,"BUSCOPAN INJ"],[3,2,"LINCOMYCIN INJ"],[3,3,"CPM INJ."],[3,4,"VITAMIN k1 INJ. 10 mg"],[3,5,"DICLOFENAC INJ."],[3,6,"MONULPIRAVIR"],[4,1,"FUROSEMIDE(LASIX) INJ."],[4,2,"DIAZepam* INJ."],[4,3,"METOCLOPRAMIDE(PLASIL) INJ."],[4,4,"BRICANYL INJ"],[4,5,"VITAMIN K1 INJ. 1 mg"],[4,6,"DMPA inj.(medroxyprogesterone)"],[5,1,"DEXAMETHASONE INJ."],[5,2,"ONDANSETRON (ONSIA) INJ."],[5,3,"PARECOXIB(DYNASTAT)INJ"],[5,4,"GENTAMICIN INJ."],[5,5,"HALOPERIDOL INJ."],[5,6,"PHENOBARBITAL INJ."],[6,1,"POVIDINE SOL 60 ML"],[6,2,"UNISON ENEMA 133 ML"],[6,3,"UNISON ENEMA 133 ML"],[6,4,"TAR SHAMPOO 240 ML"],[6,5,"TAR SHAMPOO 240 ML"],[6,6,"DEXTROSE (GLUCOSE)"],[6,7,"DEXTROSE (GLUCOSE)"],[6,8,"ALUM MILK 240 ML"],[6,9,"ALUM MILK 240 ML"],[6,10,"ALUM MILK 240 ML"],[7,1,"40%PROPYLENE GLYCOL 240 ML"],[7,2,"HIBISCRUB 60 ML"],[7,3,"S.M.W.240 ML"],[7,4,"S.M.W.240 ML"],[7,5,"PHOSPAHTE SOLUTION 60 ML"],[7,6,"MILK OF MAGNESIA (MOM) 240 ML"],[7,7,"MILK OF MAGNESIA (MOM) 240 ML"],[7,8,"MILK OF MAGNESIA (MOM) 240 ML"],[7,9,"LACTULOSE SYRUP 100 ML"],[7,10,"LACTULOSE SYRUP 100 ML"],[8,1,"BURROW SOL 240 ML"],[8,2,"POVIDINE SCRUB 60 ML"],[8,3,"ACNE LOTION 60 ML"],[8,4,"OLIVE OIL 60 ML"],[8,5,"KCL ELIXIR 240 ML"],[8,6,"SORBITOL"],[8,7,"100%GLYCERINE SYRUP 50 ML"],[8,8,"XUBIL"],[8,9,"POTASSIUM CITRATE SYR 240 ML"],[8,10,"M.CARMINATIVE 180 ML"]]},{"id":"I1","slots":[[1,1,"vislube multi"],[1,2,"TARIVID EAR"],[1,3,"1% CYCLOGYL ED"],[1,4,"0.4% RIPASUDIL"],[1,5,"1% Prednisolone acetate ED 5 ML"],[1,6,"2 % trusopt ED"],[1,7,"1% ATROPINE ED"],[1,8,"0.15%ALPHAGAN-P ED 5 ML"],[1,9,"0.5% MYDRIAMAC ED 5 ML"],[1,10,"0.01% ATROPINE ED"],[2,1,"NATEAR (L)"],[2,2,"NATEAR (L)"],[2,3,"NATEAR (L)"],[2,4,"0.5% TIMOLOL ED 5 ML"],[2,5,"0.5% TIMOLOL ED 5 ML"],[2,6,"0.5% TIMOLOL ED 5 ML"],[3,1,"2% MARDOZIA ED (L) 5 ML"],[3,2,"2% MARDOZIA ED (L) 5 ML"],[3,3,"2% MARDOZIA ED (L) 5 ML"],[3,4,"0.5% MOXIFLOXACIN (L) ED 5 ML"],[3,5,"0.5% MOXIFLOXACIN (L) ED 5 ML"],[3,6,"0.5% MOXIFLOXACIN (L) ED 5 ML"],[4,1,"0.05%HISTA ED 10 ML"],[4,2,"0.05%HISTA ED 10 ML"],[4,3,"0.05%HISTA ED 10 ML"],[4,4,"ARTIFICIAL TEARS 10 ML"],[4,5,"ARTIFICIAL TEARS 10 ML"],[4,6,"ARTIFICIAL TEARS 10 ML"],[5,1,"0.2%ALPHagan ED 5 ML"],[5,2,"0.2%ALPHagan ED 5 ML"],[5,3,"0.2%ALPHagan ED 5 ML"],[5,4,"ARTIFICIAL TEARS 10 ML"],[5,5,"ARTIFICIAL TEARS 10 ML"],[5,6,"ARTIFICIAL TEARS 10 ML"],[6,1,"0.1%DICLOFENAC ED 5 ML"],[6,2,"SOD.BICARB EAR DROP"],[6,3,"1% MYDRIACYL ED 15 ML"],[6,4,"TERRAMYCIN OINTMENT"],[6,5,"ยาอมประสะมะแว้ง"],[6,6,"0.1%OLOPAMAC ED"],[6,7,"BUDESONIDE NEBULISER"],[6,8,"MIOSTAT ED 1.5 ML"],[6,9,"CHLORAMPHENICOL EYE OINT"],[6,10,"0.05%ILIADIN NASAL DROP"],[7,1,"SOD. BICARBONATE* 7.5% INJ"],[7,2,"SOD. BICARBONATE* 7.5% INJ"],[7,3,"KAVOLRED"],[7,4,"0.5%TETRACAINE ED"],[7,5,"3%ACETIC EAR DROP"],[7,6,"ยาชงหญ้าหนวดแมว"],[7,7,"ชาชงชุมเห็ดเทศ"],[7,8,"สหัศธารา"],[7,9,"เพชรสังฆาต 500 MG CAP"],[7,10,"ฟ้าทะลายโจร พิชัย"],[8,1,""],[8,2,"ยาแก้ลมแก้เส้น (ธนัทเฮิร์บ)"],[8,3,"รางจืด (แคปซูล)"],[8,4,"ขมิ้นชัน (ท้องอืด) 350 MG CAP"],[8,5,"ขมิ้นชัน (ท้องอืด) 350 MG CAP"],[8,6,"ยาเถาวัลย์เปรียง 400 MG CAP"],[8,7,""],[8,8,"ยาหอมเทพจิตร"],[8,9,""],[8,10,""]]},{"id":"J1","slots":[[1,1,"ISPAGHULA HUSK (MUCILIN)"],[1,2,"ISPAGHULA HUSK (MUCILIN)"],[1,3,"5 MG WARFARIN (CAT:X)"],[1,4,"DIGOXIN"],[1,5,"NIFEDIPINE 5 MG"],[1,6,"ISORDIL 5 MG"],[1,7,"EXFORGE (amlodipine5+valsartan160)"],[1,8,"EXFORGE (amlodipine5+valsartan160)"],[1,9,"EXFORGE (amlodipine5+valsartan160)"],[1,10,"CLOTRIVAGINAL"],[2,1,"RISPERIDONE 1 MG"],[2,2,"RISPERIDONE 1 MG"],[2,3,"RISPERIDONE 1 MG"],[2,4,"FENOFIBRATE 200 MG"],[2,5,"FENOFIBRATE 200 MG"],[2,6,"FENOFIBRATE 200 MG"],[3,1,"FOLIC ACID 5 MG"],[3,2,"FOLIC ACID 5 MG"],[3,3,"FOLIC ACID 5 MG"],[3,4,"ISOSORBIDE DINITRATE (ISDN)"],[3,5,"ISOSORBIDE DINITRATE (ISDN)"],[3,6,"CALCIFEROL"],[4,1,"CARVEDILOL 25 MG"],[4,2,"CARVEDILOL 25 MG"],[4,3,"CARVEDILOL 25 MG"],[4,4,"PARACETAMOL 500 MG"],[4,5,"PARACETAMOL 500 MG"],[4,6,"PARACETAMOL 500 MG"],[5,1,"ATROVASTATIN"],[5,2,"ATROVASTATIN"],[5,3,"ATROVASTATIN"],[5,4,"ATENOLOL 50 MG"],[5,5,"ATENOLOL 50 MG"],[5,6,"ATENOLOL 50 MG"],[6,1,"METFORMIN 850 MG"],[6,2,"METFORMIN 850 MG"],[6,3,"METFORMIN 850 MG"],[6,4,"METFORMIN 850 MG"],[6,5,"METFORMIN 850 MG"],[6,6,"SERETIDE 25/125"],[6,7,"SERETIDE 25/125"],[6,8,"SERETIDE 25/125"],[6,9,"SERETIDE 25/125"],[6,10,"SERETIDE 25/125"],[7,1,"CYTISINE GPO 1.5 MG"],[7,2,"MEIACT SAC 50 mg"],[7,3,"TicaGRELOR 90 MG"],[7,4,"DONEPEZIL 5 MG"],[7,5,"LAMOTRIGINE 50 MG"],[7,6,""],[7,7,""],[7,8,""],[7,9,""],[7,10,""],[8,1,""],[8,2,""],[8,3,""],[8,4,""],[8,5,"SERETIDE50/100"],[8,6,""],[8,7,""],[8,8,"GLUFAST"],[8,9,"IVABRADIN"],[8,10,""]]},{"id":"K1","slots":[[1,1,"ENTRESTO 200 MG"],[1,2,"CARBAMAZEPINE 200 mg"],[1,3,"DILTIAZEM HCL"],[1,4,"CAPTOPRIL 25 mg"],[1,5,"IMDUR (isosorbide mononitrate) 60 mg"],[1,6,"BICALUTAMIDE 50 MG"],[1,7,"MODURETIC"],[1,8,"3 MG WARFARIN (CAT:X)"],[1,9,"3 MG WARFARIN (CAT:X)"],[1,10,"VASTAREL"],[2,1,"NIFEDIPINE (ADALAT) 20 MG"],[2,2,"NIFEDIPINE (ADALAT) 20 MG"],[2,3,"HCTZ"],[2,4,"ALLOPURINOL"],[2,5,"ALLOPURINOL"],[2,6,"ALLOPURINOL"],[3,1,"ASPIRIN 81 MG"],[3,2,"ASPIRIN 81 MG"],[3,3,"PP 10 MG"],[3,4,"PIOGLITAZONE"],[3,5,"PIOGLITAZONE"],[3,6,"PIOGLITAZONE"],[4,1,"SIMVASTATIN 40 mg"],[4,2,"SIMVASTATIN 40 mg"],[4,3,"TRANXENE"],[4,4,"HYDRALAZINE 25 mg"],[4,5,"HYDRALAZINE 25 mg"],[4,6,"HYDRALAZINE 25 mg"],[5,1,"SIMVASTATIN 40 mg"],[5,2,"SIMVASTATIN 40 mg"],[5,3,"SIMVASTATIN 40 mg"],[5,4,"ACETYLCYSTEINE PWD 200 mg/5 g ซอง"],[5,5,"ACETYLCYSTEINE PWD 200 mg/5 g ซอง"],[5,6,"ACETYLCYSTEINE PWD 200 mg/5 g ซอง"],[6,1,"BERODUAL (MDI) 200 DOSE"],[6,2,"BERODUAL (MDI) 200 DOSE"],[6,3,"BERODUAL (MDI) 200 DOSE"],[6,4,"BERODUAL (MDI) 200 DOSE"],[6,5,"BERODUAL (MDI) 200 DOSE"],[6,6,"MDI BUDESONIDE 200 dose"],[6,7,"VENTOLIN inhaler MDI (salbutamol)"],[6,8,"ANORO ELLIPTA 30 puff"],[6,9,"SYMBICORT(60 dose) 160+4.5mcg"],[6,10,"AVAMYS NASAL SPRAY 27.5 mcg"],[7,1,"BUDESONIDE NASAL SPRAY"],[7,2,"BUDESONIDE NASAL SPRAY"],[7,3,"BUDESONIDE NASAL SPRAY"],[7,4,""],[7,5,""],[7,6,"BERODUAL SOLUTION 20 ML"],[7,7,"VENTOLIN (salbutamol) SOL."],[7,8,"MOMETASONE (L) 50 mcg"],[7,9,"EVO SERETIDE (25/50)"],[7,10,""],[8,1,""],[8,2,""],[8,3,""],[8,4,""],[8,5,""],[8,6,""],[8,7,""],[8,8,""],[8,9,""],[8,10,""]]},{"id":"L1","slots":[[1,1,"THEOPHYLLINE 200 MG"],[1,2,"THEOPHYLLINE 200 MG"],[1,3,"THEOPHYLLINE 200 MG"],[1,4,"THEOPHYLLINE 200 MG"],[1,5,"THEOPHYLLINE 200 MG"],[1,6,"ERGOTAMINE (CAFERGOT)"],[1,7,"ERGOTAMINE (CAFERGOT)"],[1,8,"ZEMIGLO 50 MG"],[1,9,""],[1,10,""],[1,11,""],[1,12,""],[1,13,""],[1,14,"FEBURIC 80 MG"],[1,15,"FEBURIC 80 MG"],[1,16,"TAMSULOSIN (HARNAL) 0.4 MG"],[1,17,"TAMSULOSIN (HARNAL) 0.4 MG"],[2,1,"ALFUZOSIN 10 MG"],[2,2,"ALFUZOSIN 10 MG"],[2,3,"ALFUZOSIN 10 MG"],[2,4,"ALFUZOSIN 10 MG"],[2,5,"ALFUZOSIN 10 MG"],[2,6,"ALFUZOSIN 10 MG"],[2,7,"CLOZAPINE 100 MG"],[2,8,"CLOZAPINE 100 MG"],[2,9,"CLOZAPINE 100 MG"],[2,10,""],[2,11,"AMLODIPINE 10 MG"],[2,12,"AMLODIPINE 10 MG"],[2,13,"AMLODIPINE 10 MG"],[2,14,"AMLODIPINE 10 MG"],[2,15,"FINASTERRIDE 5 MG"],[2,16,"FINASTERRIDE 5 MG"],[2,17,"FINASTERRIDE 5 MG"],[3,1,"APIXABAN 5 MG"],[3,2,"APIXABAN 5 MG"],[3,3,"ZEMIMET SR 50 MG"],[3,4,""],[3,5,"LEVETIRCETAM (KEPPRA) L 500 MG"],[3,6,"LEVETIRCETAM (KEPPRA) L 500 MG"],[3,7,"AMOXICILLN 500 MG"],[3,8,"AMOXICILLN 500 MG"],[3,9,"DIUTROPAN 5 MG"],[3,10,"DIUTROPAN 5 MG"],[3,11,"DIUTROPAN 5 MG"],[3,12,"DIUTROPAN 5 MG"],[3,13,"GLICLAZIDE MR 60 MG"],[3,14,"GLICLAZIDE MR 60 MG"],[3,15,"GLICLAZIDE MR 60 MG"],[3,16,"GLICLAZIDE MR 60 MG"],[3,17,"DICLOXACILLIN 500 MG"]]},{"id":"L2","slots":[[1,1,"FELODIPINE 10 MG"],[1,2,"URITOS 0.1 MG"],[1,3,"MOSAPRIDE (GASMOTIN) 5 MG"],[1,4,"URIEF 4 MG"],[1,5,"clomifene"],[1,6,""],[1,7,""],[1,8,""],[1,9,""],[1,10,""],[1,11,""],[1,12,""],[1,13,""],[1,14,"CLINDAMYCIN 300 MG"],[1,15,"CLINDAMYCIN 300 MG"],[1,16,""],[1,17,""],[2,1,"TIZANIDINE 2 MG"],[2,2,"TIZANIDINE 2 MG"],[2,3,"TIZANIDINE 2 MG"],[2,4,"TIZANIDINE 2 MG"],[2,5,"TIZANIDINE 2 MG"],[2,6,"TIZANIDINE 2 MG"],[2,7,"NAPROXEN 250 MG"],[2,8,"NAPROXEN 250 MG"],[2,9,"NAPROXEN 250 MG"],[2,10,"NAPROXEN 250 MG"],[2,11,"NAPROXEN 250 MG"],[2,12,"NAPROXEN 250 MG"],[2,13,"NAPROXEN 250 MG"],[2,14,"NAPROXEN 250 MG"],[2,15,"NAPROXEN 250 MG"],[2,16,"NAPROXEN 250 MG"],[2,17,"NAPROXEN 250 MG"],[3,1,"SERTRALINE(ZOLOFT) 50 MG"],[3,2,"SERTRALINE(ZOLOFT) 50 MG"],[3,3,"SERTRALINE(ZOLOFT) 50 MG"],[3,4,"SERTRALINE(ZOLOFT) 50 MG"],[3,5,"SERTRALINE(ZOLOFT) 50 MG"],[3,6,"SERTRALINE(ZOLOFT) 50 MG"],[3,7,"SERTRALINE(ZOLOFT) 50 MG"],[3,8,"SERTRALINE(ZOLOFT) 50 MG"],[3,9,"SERTRALINE(ZOLOFT) 50 MG"],[3,10,"SERTRALINE(ZOLOFT) 50 MG"],[3,11,"SERTRALINE(ZOLOFT) 50 MG"],[3,12,"SERTRALINE(ZOLOFT) 50 MG"],[3,13,"PANCREATIN(COMBIZYM) 200+40MG"],[3,14,"PANCREATIN(COMBIZYM) 200+40MG"],[3,15,"DAFLON 450MG+50MG"],[3,16,"DAFLON 450MG+50MG"],[3,17,"DAFLON 450MG+50MG"]]},{"id":"L3","slots":[[1,1,"LEFLUNOMIDE (L) 20 MG"],[1,2,"LEFLUNOMIDE (L) 20 MG"],[1,3,"LEFLUNOMIDE (L) 20 MG"],[1,4,"LEFLUNOMIDE (L) 20 MG"],[1,5,""],[1,6,""],[1,7,""],[1,8,""],[1,9,""],[1,10,""],[1,11,""],[1,12,""],[1,13,""],[1,14,"EMPAGLIFLOZIN 25 MG"],[1,15,"EMPAGLIFLOZIN 25 MG"],[1,16,"EMPAGLIFLOZIN 25 MG"],[1,17,"EMPAGLIFLOZIN 25 MG"],[2,1,"MANIDIPINE 20 MG"],[2,2,"MANIDIPINE 20 MG"],[2,3,"MANIDIPINE 20 MG"],[2,4,"MANIDIPINE 20 MG"],[2,5,"MANIDIPINE 20 MG"],[2,6,"MANIDIPINE 20 MG"],[2,7,"MANIDIPINE 20 MG"],[2,8,"MANIDIPINE 20 MG"],[2,9,"MANIDIPINE 20 MG"],[2,10,"MANIDIPINE 20 MG"],[2,11,"ORPHENADRINE(NORFLEX) 100 MG"],[2,12,"ORPHENADRINE(NORFLEX) 100 MG"],[2,13,"CARVEDILOL 6.25 MG"],[2,14,"CARVEDILOL 6.25 MG"],[2,15,"CARVEDILOL 6.25 MG"],[2,16,"CARVEDILOL 6.25 MG"],[2,17,"CARVEDILOL 6.25 MG"],[3,1,"CLOPIDOGREL(โคลพิโดเกล) 75 MG"],[3,2,"CLOPIDOGREL(โคลพิโดเกล) 75 MG"],[3,3,"CLOPIDOGREL(โคลพิโดเกล) 75 MG"],[3,4,"CLOPIDOGREL(โคลพิโดเกล) 75 MG"],[3,5,"CLOPIDOGREL(โคลพิโดเกล) 75 MG"],[3,6,"SITAGLIPTIN(JIMVIA) 100 MG"],[3,7,"SITAGLIPTIN(JIMVIA) 100 MG"],[3,8,"SITAGLIPTIN(JIMVIA) 100 MG"],[3,9,"SITAGLIPTIN(JIMVIA) 100 MG"],[3,10,"VERAPAMIL(ISOPTIN) 240 MG"],[3,11,"VERAPAMIL(ISOPTIN) 240 MG"],[3,12,"VERAPAMIL(ISOPTIN) 240 MG"],[3,13,"VERAPAMIL(ISOPTIN) 240 MG"],[3,14,"SULFASALAZINE 500 MG"],[3,15,"SULFASALAZINE 500 MG"],[3,16,"SULFASALAZINE 500 MG"],[3,17,"SULFASALAZINE 500 MG"]]},{"id":"M1","slots":[[1,1,"0.05% LATANOPROST ED 2.5 ML (L)"],[1,2,"0.05% LATANOPROST ED 2.5 ML (L)"],[1,3,"0.5%CHLORAM EYE DROP 5 ML"],[1,4,"0.5%CHLORAM EYE DROP 5 ML"],[1,5,"MIXTARD(1000iu) 30/70iu SYRINGE"],[1,6,"MIXTARD(1000iu) 30/70iu SYRINGE"],[1,7,"MIXTARD(1000iu) 30/70iu SYRINGE"],[1,8,"MIXTARD(1000iu) 30/70iu SYRINGE"],[1,9,"OXYTOCIN (SYNTO) INJ. 10 iu"],[1,10,"METHERGIN INJ. 200 mcg"],[1,11,"HEPARIN Na INJ. 5000 iu/ml"],[1,12,"STREPTOKINASE* INJ 1.5mu"],[2,1,"0.0015%TAFLOTAN-S ED 0.3 ML"],[2,2,"0.0015%TAFLOTAN-S ED 0.3 ML"],[2,3,"CD-OPH ED 5 ML"],[2,4,"CD-OPH ED 5 ML"],[2,5,"MIXTARD(300iu) 30/70iu PENFILL"],[2,6,"MIXTARD(300iu) 30/70iu PENFILL"],[2,7,"MIXTARD(300iu) 30/70iu PENFILL"],[2,8,"MIXTARD(300iu) 30/70iu PENFILL"],[2,9,"HEPATITIS B VACCINE 20 mcg/1 Ml"],[2,10,"RABIES ANTISERUM (HRIG) 300 IU"],[2,11,"HUMAN TETANUS IMMUNO. 250 iu"],[2,12,"TETANUS INJ.(dt) 2+7.5 Lf"],[3,1,"(หู) CHLORAM EAR DROP 10 M"],[3,2,"(หู) CHLORAM EAR DROP 10 M"],[3,3,"10%PheNYLEPHRINE ED 5 M"],[3,4,"INSULIN GLARGINE (100 iu/ml) PENFILL VIAL"],[3,5,"(DM type 1) INSULIN GLARGINE (TOUJEO)"],[3,6,"INSULIN REGULAR (RI) 100 iu SYRINGE"],[3,7,"NOVOMIX 30iu+70iu PENFILL"],[3,8,"NOVOMIX 30iu+70iu PENFILL"],[3,9,"HBIG 180 iu/1 mL"],[3,10,"RABIES ANTISERUM (ERIG) 1000 IU"],[3,11,"RABIES VACCINE 1 COURSE"],[3,12,""],[4,1,"SANDOSTATIN* INJ. 100 mcg"],[4,2,""],[4,3,""],[4,4,""],[4,5,"INSULIN NPH(1000iu) SYRINGE"],[4,6,"INSULIN NPH(1000iu) SYRINGE"],[4,7,"INSULIN NPH (300iu) PENFILL"],[4,8,"INSULIN NPH (300iu) PENFILL"],[4,9,"TUBERCULIN INJ. 10 iu/100 mcL"],[4,10,"CUROSURF 80 mg/1 mL"],[4,11,"NOVOSEVEN INJ"],[4,12,"CALCITONIN INJ 50 U"],[5,1,"CISATRACURIUM (NIMBEX) INJ. 2 mg/1 mL"],[5,2,""],[5,3,"LAAB (AatraZeneca-Evusheld)"],[5,4,""],[5,5,"VINCRISTINE INJ.(chemo) 2mg/2mL"],[5,6,""],[5,7,"LIPOSOMAL DOXORUBICIN (chemo)"],[5,8,"PROPOFOL INJ. 200 mg/20 mL"],[5,9,""],[5,10,"NALADOR INJ. 500 mcg"],[5,11,""],[5,12,"HUMAN ALBUMIN 20% 50 ML"]]},{"id":"M2","slots":[[1,1,"CREAM BASE 5 GM."],[1,2,"CREAM BASE 30 GM."],[1,3,"ZINC OXIDE PASTE 30 GM"],[1,4,"ZINC OXIDE PASTE 5 GM"],[1,5,"LCD 5% CREAM 30 G"],[1,6,"LCD 5% CREAM 30 G"],[1,7,"LCD 10% CREAM 30 GM"],[1,8,"LCD 10% CREAM 30 GM"],[1,9,"EpoSIS 5000 (เบิกจ่ายตรง เข้าโครงการไต)"],[1,10,"EpoSIS 5000 (เบิกจ่ายตรง เข้าโครงการไต)"],[1,11,"HEMAX (เข้าโครงการ HD) 4000 iu"],[1,12,"HEMAX (เข้าโครงการ HD) 4000 iu"],[2,1,"SA 5% IN 0.02%TA 30 G"],[2,2,"SA 5% IN 0.02%TA 30 G"],[2,3,"SA 5% CREAM 5 G"],[2,4,"SA 5% CREAM 5 G"],[2,5,"UREA 10% CREAM 5 GM"],[2,6,"UREA 10% CREAM 5 GM"],[2,7,"LCD 5% IN 0.02%TA 30 GM."],[2,8,"LCD 5% IN 0.02%TA 30 GM."],[2,9,"HEMAX (เข้าโครงการ HD) 4000 iu"],[2,10,"HEMAX (เข้าโครงการ HD) 4000 iu"],[2,11,"HYPERCRIT (เข้าโครงการ HD/CAPD)"],[2,12,"HYPERCRIT (เข้าโครงการ HD/CAPD)"],[3,1,"SA 10% CREAM 5 G"],[3,2,"SA 10% CREAM 30 G"],[3,3,""],[3,4,"UREA 20% CREAM 5 GM."],[3,5,""],[3,6,"UREA 10% IN 0.02%TA 5 GM."],[3,7,"UREA10% IN 0.02%TA30 GM."],[3,8,"AUGMENTIN INJ 1.2 G"],[3,9,""],[3,10,""],[3,11,""],[3,12,""],[4,1,"LCD 5% CREAM 500 G"],[4,2,"LCD 5% CREAM 500 G"],[4,3,"LCD 5% CREAM 500 G"],[4,4,"LCD 5% CREAM 500 G"],[4,5,"UREA 40% OINT. 30 G"],[4,6,""],[4,7,""],[4,8,""],[4,9,""],[4,10,"PROCTOSEDYL SUPPOSITORY"],[4,11,"LEUCO-PLUS (FILGRASTIM) INJ."],[4,12,"AMPHOTERICIN B INJ 50 MG"],[5,1,""],[5,2,""],[5,3,""],[5,4,""],[5,5,""],[5,6,""],[5,7,""],[5,8,""],[5,9,""],[5,10,""],[5,11,""],[5,12,""]]}];
+const LS='drugloc-data-v3-final';
+let DATA=DEFAULT_DATA, ALL=[], cur=null, sel=null, hits=new Set();
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm=s=>String(s).toLowerCase().replace(/[^0-9a-z฀-๿.+%]+/g,' ').trim();
+const compact=s=>norm(s).replace(/\s+/g,'');
+
+function load(d){
+  DATA=d; ALL=[];
+  d.forEach(c=>c.slots.forEach(([sh,sl,name])=>{
+    ALL.push({cab:c.id,sh,sl,name,code:codeOf(c.id,sh,sl),n:norm(name),c:compact(name)});
+  }));
+  const filled=ALL.filter(x=>x.name).length, kinds=new Set(ALL.filter(x=>x.name).map(x=>x.c)).size;
+  $('stats').textContent=`${d.length} ตู้ · ${filled.toLocaleString()} ช่องที่มียา · ${kinds.toLocaleString()} รายการยา`;
+  renderTabs(); showCab(cur && d.find(c=>c.id===cur) ? cur : d[0].id); search();
+}
+function codeOf(cab,sh,sl){ return /RB$/.test(cab)? `${cab} #${sl}` : `${cab.replace(/\s*\(\d+\)$/,'')}-${sh}-${sl}`; }
+
+function search(){
+  const raw=$('q').value.trim(); $('clear').style.display=raw?'block':'none';
+  hits=new Set(); const R=$('results');
+  if(!raw){ R.innerHTML=`<div class="rhead"><span>ผลการค้นหา</span></div><div class="empty-state">เริ่มพิมพ์ชื่อยาเพื่อดูตำแหน่ง<br><br>หรือกดเลือกตู้ด้านขวาเพื่อดูยาทั้งตู้</div>`; renderTabs(); paintCab(); return; }
+  const q=norm(raw), qc=compact(raw), toks=q.split(' ').filter(Boolean);
+  // code search
+  const codeQ=raw.toUpperCase().replace(/\s+/g,'');
+  let list=[];
+  if(/^[A-Z]+\d*(-\d+){0,2}-?$/.test(codeQ) && ALL.some(x=>x.code.startsWith(codeQ.replace(/-$/,'')))){
+    const p=codeQ.replace(/-$/,'');
+    list=ALL.filter(x=>x.code===p||x.code.startsWith(p+'-')||(x.code.startsWith(p)&&!/^\d/.test(x.code.slice(p.length))));
+    list.forEach(x=>hits.add(x.code));
+    R.innerHTML=`<div class="rhead"><span>ตำแหน่งที่ขึ้นต้นด้วย <b>${esc(p)}</b></span><span>${list.length} ช่อง</span></div>`+
+      list.map(x=>`<div class="item"><div class="locs"><button class="loc" data-code="${esc(x.code)}">${esc(x.code)}</button></div><div class="iname" style="margin-top:6px">${x.name?esc(x.name):'<span style="color:#a3b0aa">— ช่องว่าง —</span>'}</div></div>`).join('');
+    bindLocs(); renderTabs(); if(list[0]&&!isMobile()) pick(list[0].code,false); else paintCab(); return;
+  }
+  list=ALL.filter(x=>x.name && (toks.every(t=>x.n.includes(t)) || x.c.includes(qc)));
+  const groups=new Map();
+  list.forEach(x=>{ const k=x.c; if(!groups.has(k)) groups.set(k,{name:x.name,c:x.c,n:x.n,locs:[]}); groups.get(k).locs.push(x); hits.add(x.code); });
+  const score=g=> g.n.startsWith(q)||g.c.startsWith(qc)?0 : (' '+g.n).includes(' '+toks[0])?1 : 2;
+  const arr=[...groups.values()].sort((a,b)=>score(a)-score(b)||a.name.localeCompare(b.name));
+  if(!arr.length){ R.innerHTML=`<div class="rhead"><span>ผลการค้นหา</span></div><div class="empty-state">ไม่พบยา <b>“${esc(raw)}”</b><br>ลองพิมพ์ให้สั้นลง เช่นเฉพาะชื่อยา โดยไม่ใส่ความแรง</div>`; renderTabs(); paintCab(); return; }
+  R.innerHTML=`<div class="rhead"><span>พบ ${arr.length} รายการ</span><span>${list.length} ตำแหน่ง</span></div>`+
+    arr.map(g=>`<div class="item"><div class="iname">${hl(g.name,toks)}</div><div class="locs">${g.locs.map(x=>`<button class="loc" data-code="${esc(x.code)}">${esc(x.code)}</button>`).join('')}</div></div>`).join('');
+  bindLocs(); renderTabs(); if(!isMobile()) pick(arr[0].locs[0].code,false); else paintCab();
+}
+const isMobile=()=>innerWidth<=860;
+function hl(name,toks){
+  let s=esc(name); toks.filter(t=>t.length>0).sort((a,b)=>b.length-a.length).forEach(t=>{
+    const re=new RegExp('('+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'); s=s.replace(re,'<mark>$1</mark>');
+  }); return s.replace(/<mark>([^<]*)<mark>([^<]*)<\/mark>([^<]*)<\/mark>/g,'<mark>$1$2$3</mark>');
+}
+function bindLocs(){ document.querySelectorAll('.loc').forEach(b=>b.onclick=()=>pick(b.dataset.code,true)); markLocs(); }
+function markLocs(){ document.querySelectorAll('.loc').forEach(b=>b.classList.toggle('on',b.dataset.code===sel)); }
+
+function pick(code,scroll){
+  const x=ALL.find(a=>a.code===code); if(!x) return; sel=code;
+  if(cur!==x.cab) showCab(x.cab); else paintCab();
+  const isRB=/RB$/.test(x.cab);
+  $('focus').innerHTML=`<div class="focus"><div class="big">${esc(code)}</div><div style="min-width:0"><div class="fname">${x.name?esc(x.name):'ช่องว่าง'}</div><div class="parts">
+    <span>ตู้<b>${esc(x.cab)}</b></span>${isRB?'':`<span>ชั้น<b>${x.sh}</b></span>`}<span>ช่อง<b>${x.sl}</b></span></div></div></div>`;
+  markLocs();
+  const el=document.querySelector(`.slot[data-code="${CSS.escape(code)}"]`);
+  if(el){
+    // scroll only inside the cabinet frame (horizontal) – never move the page while typing
+    const fr=el.closest('.frame'); if(fr) fr.scrollTo({left:el.offsetLeft-fr.clientWidth/2+el.offsetWidth/2,behavior:'smooth'});
+    if(scroll && innerWidth<=860){ $('q').blur(); $('focus').scrollIntoView({behavior:'smooth',block:'start'}); }
+  }
+}
+
+function renderTabs(){
+  const hitCabs=new Set(ALL.filter(x=>hits.has(x.code)).map(x=>x.cab));
+  $('tabs').innerHTML=DATA.map(c=>`<button class="tab ${c.id===cur?'on':''} ${hitCabs.has(c.id)?'has':''}" data-id="${esc(c.id)}">${esc(c.id)}</button>`).join('');
+  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{ showCab(b.dataset.id); });
+  const on=document.querySelector('.tab.on'); if(on){ const T=$('tabs'); T.scrollLeft=on.offsetLeft-T.clientWidth/2+on.clientWidth/2; }
+}
+function showCab(id){
+  cur=id; if(sel && !ALL.find(x=>x.code===sel&&x.cab===id)){ sel=null; $('focus').innerHTML=''; }
+  renderTabs(); paintCab();
+}
+function paintCab(){
+  const c=DATA.find(d=>d.id===cur); if(!c) return;
+  const shelves=new Map(); c.slots.forEach(([sh,sl,n])=>{ if(!shelves.has(sh)) shelves.set(sh,[]); shelves.get(sh).push([sl,n]); });
+  const keys=[...shelves.keys()].sort((a,b)=>a-b);
+  const isRB=/RB$/.test(c.id);
+  const filled=c.slots.filter(s=>s[2]).length;
+  let html=`<div class="cabtitle"><h2>ตู้ ${esc(c.id)}</h2><span>${isRB?'':keys.length+' ชั้น · '}${c.slots.length} ช่อง · มียา ${filled}</span></div><div class="frame">`;
+  keys.forEach(k=>{
+    const s=shelves.get(k).sort((a,b)=>a[0]-b[0]);
+    const cols=isRB?6:s.length;
+    html+=`<div class="shelf">${isRB?'':`<div class="slab">ชั้น<b>${k}</b></div>`}<div class="slots" style="grid-template-columns:repeat(${cols},86px)">`+
+      s.map(([sl,n])=>{ const code=codeOf(c.id,k,sl); return `<button class="slot ${n?'':'blank'} ${hits.has(code)?'match':''} ${code===sel?'sel':''}" data-code="${esc(code)}" title="${esc(code+' '+(n||'ช่องว่าง'))}"><span class="no">${isRB?'#':k+'-'}${sl}</span><span class="nm">${n?esc(n):'ว่าง'}</span></button>`; }).join('')+`</div></div>`;
+  });
+  html+=`</div><div class="legend"><span><i style="background:var(--hit)"></i>ตำแหน่งที่เลือก</span><span><i style="background:var(--hit-soft);border-color:var(--hit)"></i>ตรงกับคำค้น</span><span><i style="background:var(--empty);border-style:dashed"></i>ช่องว่าง</span></div>`;
+  $('cab').innerHTML=html;
+  document.querySelectorAll('.slot').forEach(b=>b.onclick=()=>pick(b.dataset.code,false));
+}
+
+// excel import – same parser that built the default data
+// Shared workbook parser: used by build.js (Node) and embedded in the page for "update from Excel".
+function parseWorkbook(wb, XLSX){
+  const CODE=/^\s*([A-Z]+\d*[A-Z]*)\s*-\s*(\d+)\s*-\s*(\d+)\s*-?\s*$/i, BAD=/^\s*([A-Z]+\d*)-(\d)(\d+)\s*$/i;
+  const clean=v=>{ if(v==null) return ''; let s=String(v).replace(/[\t\r\n]+/g,' ');
+    s=s.replace(/\s{3,}\d+\s*$/,''); return s.replace(/\s+/g,' ').trim(); };
+  const idOf=n=>{ const m=String(n).trim().match(/^([A-Z]+\d+)/i); return m?m[1].toUpperCase():null; };
+  // pick one sheet per cabinet: "<id> FINAL" first, else the sheet named exactly "<id>"
+  const by=new Map();
+  wb.SheetNames.forEach(sn=>{ const id=idOf(sn); if(!id) return;
+    // cabinets A–K: only "<id> FINAL" sheets; other cabinets (L, M): only the sheet named exactly "<id>"
+    const fin=/FINAL/i.test(sn), plain=sn.trim().toUpperCase()===id;
+    const rank=/^[A-K]\d/.test(id) ? (fin?0:9) : (plain?0:9);
+    if(rank===9) return; const cur=by.get(id); if(!cur||rank<cur.rank) by.set(id,{sn,rank}); });
+  const order=[...by.keys()].sort((a,b)=>{ const pa=a.match(/^([A-Z]+)(\d+)$/), pb=b.match(/^([A-Z]+)(\d+)$/);
+    return pa[1]===pb[1]? (+pa[2])-(+pb[2]) : pa[1].localeCompare(pb[1]); });
+  const out=[];
+  order.forEach(id=>{
+    const sn=by.get(id).sn, ws=wb.Sheets[sn]; if(!ws||!ws['!ref']) return;
+    const merges=ws['!merges']||[];
+    const raw=(r,c)=>{ const cell=ws[XLSX.utils.encode_cell({r,c})]; return cell?cell.v:null; };
+    const mergeOf=(r,c)=>merges.find(m=>r>=m.s.r&&r<=m.e.r&&c>=m.s.c&&c<=m.e.c);
+    const val=(r,c)=>{ const m=mergeOf(r,c); return m?raw(m.s.r,m.s.c):raw(r,c); };
+    const rng=XLSX.utils.decode_range(ws['!ref']);
+    // 1) sheets with position codes: drug name sits in the cell above each code
+    const codes=[];
+    for(let r=rng.s.r;r<=rng.e.r;r++) for(let c=rng.s.c;c<=rng.e.c;c++){
+      const v=raw(r,c); if(typeof v!=='string') continue;
+      const m=v.match(CODE)||v.match(BAD); if(m) codes.push({r,c,sh:+m[2],sl:+m[3]});
+    }
+    let slots=[];
+    if(codes.length){
+      const rows=new Map(); codes.forEach(k=>{ if(!rows.has(k.r)) rows.set(k.r,[]); rows.get(k.r).push(k); });
+      rows.forEach(list=>{ // shelf = majority in the row (fixes typos like D1-1-10 in shelf 6)
+        const cnt={}; list.forEach(k=>cnt[k.sh]=(cnt[k.sh]||0)+1);
+        const sh=+Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0];
+        list.sort((a,b)=>a.c-b.c).forEach((k,i)=>{
+          let sl=k.sl; if(list.filter(x=>x.sl===sl).length>1) sl=i+1;
+          const n=k.r>0?clean(val(k.r-1,k.c)):''; slots.push([sh,sl, n.toUpperCase()===id?'':n]); });
+      });
+    }
+    slots.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+    if(slots.length) out.push({id,sheet:sn,slots});
+  });
+  return out;
+}
+
+
+$('importBtn').onclick=()=>{ $('msg').textContent=''; $('dlg').classList.add('on'); };
+$('closeBtn').onclick=()=>$('dlg').classList.remove('on');
+$('dlg').onclick=e=>{ if(e.target.id==='dlg') $('dlg').classList.remove('on'); };
+$('resetBtn').onclick=()=>{ try{localStorage.removeItem(LS)}catch(e){} load(DEFAULT_DATA); $('msg').innerHTML='<span style="color:var(--brand)">กลับไปใช้ข้อมูลตั้งต้นแล้ว</span>'; };
+$('file').onchange=async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    if(typeof XLSX==='undefined') throw new Error('โหลดตัวอ่าน Excel ไม่สำเร็จ');
+    const wb=XLSX.read(await f.arrayBuffer());
+    const d=parseWorkbook(wb,XLSX).map(c=>({id:c.id,slots:c.slots})); if(!d.length) throw new Error('ไม่พบรหัสตำแหน่งในไฟล์นี้');
+    load(d); try{localStorage.setItem(LS,JSON.stringify(d))}catch(_){}
+    $('msg').innerHTML=`<span style="color:var(--brand)">นำเข้าแล้ว ${d.length} ตู้ ${d.reduce((a,c)=>a+c.slots.length,0)} ช่อง</span>`;
+  }catch(err){ $('msg').innerHTML=`<span style="color:#b91c1c">${esc(err.message)}</span>`; }
+  e.target.value='';
+};
+
+let t; $('q').addEventListener('input',()=>{ clearTimeout(t); t=setTimeout(()=>{ search(); if(isMobile()&&scrollY>0) window.scrollTo(0,0); },120); });
+$('q').addEventListener('keydown',e=>{ if(e.key==='Enter'){ const b=document.querySelector('.loc'); if(b) pick(b.dataset.code,true); } if(e.key==='Escape'){ $('q').value=''; search(); }});
+$('clear').onclick=()=>{ $('q').value=''; search(); $('q').focus(); };
+document.addEventListener('keydown',e=>{ if(e.key==='/' && document.activeElement!==$('q')){ e.preventDefault(); $('q').focus(); }});
+
+let saved=null; try{ saved=JSON.parse(localStorage.getItem(LS)||'null'); }catch(e){}
+load(Array.isArray(saved)&&saved.length?saved:DEFAULT_DATA);
+</script>
+</body>
+</html>
